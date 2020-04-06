@@ -4295,18 +4295,19 @@ function tableReducer(state, action) {
   switch (action.type) {
     case 'SELECT_ALL_ROWS':
       {
+        var rows = action.rows;
         var allChecked = !state.allSelected;
         return _objectSpread2({}, state, {
           allSelected: allChecked,
-          selectedCount: allChecked ? action.rows.length : 0,
-          selectedRows: allChecked ? action.rows : []
+          selectedCount: allChecked ? rows.length : 0,
+          selectedRows: allChecked ? rows : []
         });
       }
 
     case 'SELECT_SINGLE_ROW':
       {
         var row = action.row,
-            rows = action.rows,
+            _rows = action.rows,
             isRowSelected = action.isRowSelected,
             keyField = action.keyField;
 
@@ -4320,7 +4321,7 @@ function tableReducer(state, action) {
 
         return _objectSpread2({}, state, {
           selectedCount: state.selectedRows.length + 1,
-          allSelected: state.selectedRows.length + 1 === rows.length,
+          allSelected: state.selectedRows.length + 1 === _rows.length,
           selectedRows: insertItem(state.selectedRows, row)
         });
       }
@@ -4328,10 +4329,10 @@ function tableReducer(state, action) {
     case 'SELECT_MULTIPLE_ROWS':
       {
         var selectedRows = action.selectedRows,
-            _rows = action.rows;
+            _rows2 = action.rows;
         return _objectSpread2({}, state, {
           selectedCount: selectedRows.length,
-          allSelected: selectedRows.length === _rows.length,
+          allSelected: selectedRows.length === _rows2.length,
           selectedRows: selectedRows
         });
       }
@@ -4340,15 +4341,18 @@ function tableReducer(state, action) {
       {
         var sortColumn = action.sortColumn,
             sortDirection = action.sortDirection,
+            sortServer = action.sortServer,
             selectedColumn = action.selectedColumn,
             pagination = action.pagination,
-            paginationServer = action.paginationServer;
+            paginationServer = action.paginationServer,
+            visibleOnly = action.visibleOnly;
+        var clearSelectedOnSort = pagination && paginationServer || sortServer || visibleOnly;
         return _objectSpread2({}, state, {
           sortColumn: sortColumn,
           selectedColumn: selectedColumn,
           sortDirection: sortDirection,
           currentPage: 1
-        }, pagination && paginationServer && {
+        }, clearSelectedOnSort && {
           allSelected: false,
           selectedCount: 0,
           selectedRows: []
@@ -4358,10 +4362,12 @@ function tableReducer(state, action) {
     case 'CHANGE_PAGE':
       {
         var page = action.page,
-            _paginationServer = action.paginationServer;
+            _paginationServer = action.paginationServer,
+            _visibleOnly = action.visibleOnly;
+        var clearSelectedOnPage = _paginationServer || _visibleOnly;
         return _objectSpread2({}, state, {
           currentPage: page
-        }, _paginationServer && {
+        }, clearSelectedOnPage && {
           allSelected: false,
           selectedCount: 0,
           selectedRows: []
@@ -4386,20 +4392,6 @@ function tableReducer(state, action) {
           selectedCount: 0,
           selectedRows: [],
           selectedRowsFlag: selectedRowsFlag
-        });
-      }
-
-    case 'V_SELECT_ALL_ROWS':
-      {
-        var _allChecked = !state.allSelected;
-
-        var currentPage = state.currentPage;
-        var startIndex = (currentPage - 1) * state.rowsPerPage;
-        var endIndex = startIndex + state.rowsPerPage;
-        return _objectSpread2({}, state, {
-          allSelected: _allChecked,
-          selectedCount: _allChecked ? action.rows.slice(startIndex, endIndex).length : 0,
-          selectedRows: _allChecked ? action.rows.slice(startIndex, endIndex) : []
         });
       }
 
@@ -4776,8 +4768,7 @@ var TableCellCheckbox = function TableCellCheckbox(_ref) {
       selectableRowsComponentProps = _useTableContext.selectableRowsComponentProps,
       selectableRowDisabled = _useTableContext.selectableRowDisabled;
 
-  var disabled = selectableRowDisabled && selectableRowDisabled(row); // eslint-disable-next-line react-hooks/exhaustive-deps
-
+  var disabled = selectableRowDisabled && selectableRowDisabled(row);
   var handleOnRowSelected = React.useCallback(function () {
     return dispatch({
       type: 'SELECT_SINGLE_ROW',
@@ -4786,7 +4777,7 @@ var TableCellCheckbox = function TableCellCheckbox(_ref) {
       isRowSelected: selected,
       keyField: keyField
     });
-  }, [data, selected, row]);
+  }, [dispatch, row, data, selected, keyField]);
   return React__default.createElement(TableCellCheckboxStyle, {
     onClick: function onClick(e) {
       return e.stopPropagation();
@@ -4811,7 +4802,7 @@ TableCellCheckbox.propTypes = {
 };
 
 function _templateObject$7() {
-  var data = _taggedTemplateLiteral(["\n  flex: 0 0 48px;\n  justify-content: center;\n  align-items: center;\n  user-select: none;\n  white-space: nowrap;\n"]);
+  var data = _taggedTemplateLiteral(["\n  display: inline-flex;\n  align-items: center;\n  user-select: none;\n  white-space: nowrap;\n  border: none;\n  background-color: transparent;\n  ", ";\n"]);
 
   _templateObject$7 = function _templateObject() {
     return data;
@@ -4819,65 +4810,7 @@ function _templateObject$7() {
 
   return data;
 }
-var TableCellCheckboxStyle$1 = styled__default(CellBase)(_templateObject$7());
-
-var TableCellCheckboxv = function TableCellCheckboxv(_ref) {
-  var name = _ref.name,
-      row = _ref.row,
-      selected = _ref.selected;
-
-  var _useTableContext = useTableContext(),
-      dispatch = _useTableContext.dispatch,
-      data = _useTableContext.data,
-      keyField = _useTableContext.keyField,
-      vSelectableRowsComponent = _useTableContext.vSelectableRowsComponent,
-      vSelectableRowsComponentProps = _useTableContext.vSelectableRowsComponentProps,
-      vSelectableRowDisabled = _useTableContext.vSelectableRowDisabled;
-
-  var disabled = vSelectableRowDisabled && vSelectableRowDisabled(row); // eslint-disable-next-line react-hooks/exhaustive-deps
-
-  var handleOnRowSelected = React.useCallback(function () {
-    return dispatch({
-      type: 'SELECT_SINGLE_ROW',
-      row: row,
-      rows: data,
-      isRowSelected: selected,
-      keyField: keyField
-    });
-  }, [data, selected, row]);
-  return React__default.createElement(TableCellCheckboxStyle$1, {
-    onClick: function onClick(e) {
-      return e.stopPropagation();
-    },
-    className: "rdt_TableCell",
-    noPadding: true
-  }, React__default.createElement(Checkbox, {
-    name: name,
-    component: vSelectableRowsComponent,
-    componentOptions: vSelectableRowsComponentProps,
-    checked: selected,
-    "aria-checked": selected,
-    onClick: handleOnRowSelected,
-    disabled: disabled
-  }));
-};
-
-TableCellCheckboxv.propTypes = {
-  name: propTypes.string.isRequired,
-  row: propTypes.object.isRequired,
-  selected: propTypes.bool.isRequired
-};
-
-function _templateObject$8() {
-  var data = _taggedTemplateLiteral(["\n  display: inline-flex;\n  align-items: center;\n  user-select: none;\n  white-space: nowrap;\n  border: none;\n  background-color: transparent;\n  ", ";\n"]);
-
-  _templateObject$8 = function _templateObject() {
-    return data;
-  };
-
-  return data;
-}
-var ButtonStyle = styled__default.button(_templateObject$8(), function (props) {
+var ButtonStyle = styled__default.button(_templateObject$7(), function (props) {
   return props.theme.expanderButton.style;
 });
 
@@ -4902,7 +4835,8 @@ var ExpanderButton = function ExpanderButton(_ref) {
     onClick: handleToggle,
     "data-testid": "expander-button-".concat(row[keyField]),
     disabled: disabled,
-    role: "button"
+    role: "button",
+    type: "button"
   }, icon);
 };
 
@@ -4918,16 +4852,16 @@ ExpanderButton.defaultProps = {
   disabled: false
 };
 
-function _templateObject$9() {
+function _templateObject$8() {
   var data = _taggedTemplateLiteral(["\n  white-space: nowrap;\n  font-weight: 400;\n  ", ";\n"]);
 
-  _templateObject$9 = function _templateObject() {
+  _templateObject$8 = function _templateObject() {
     return data;
   };
 
   return data;
 }
-var TableCellExpanderStyle = styled__default(CellBase)(_templateObject$9(), function (props) {
+var TableCellExpanderStyle = styled__default(CellBase)(_templateObject$8(), function (props) {
   return props.theme.expanderCell.style;
 });
 
@@ -4965,10 +4899,10 @@ TableCellExpander.defaultProps = {
   disabled: false
 };
 
-function _templateObject$a() {
+function _templateObject$9() {
   var data = _taggedTemplateLiteral(["\n  width: 100%;\n  box-sizing: border-box;\n  ", ";\n  ", ";\n"]);
 
-  _templateObject$a = function _templateObject() {
+  _templateObject$9 = function _templateObject() {
     return data;
   };
 
@@ -4984,7 +4918,7 @@ var renderChildren = function renderChildren(children, data) {
   });
 };
 
-var ExpanderRowStyle = styled__default.div(_templateObject$a(), function (props) {
+var ExpanderRowStyle = styled__default.div(_templateObject$9(), function (props) {
   return props.theme.expanderRow.style;
 }, function (props) {
   return props.extendedRowStyle;
@@ -5031,17 +4965,17 @@ function _templateObject2$4() {
   return data;
 }
 
-function _templateObject$b() {
+function _templateObject$a() {
   var data = _taggedTemplateLiteral(["\n  &:hover {\n    ", ";\n  }\n"]);
 
-  _templateObject$b = function _templateObject() {
+  _templateObject$a = function _templateObject() {
     return data;
   };
 
   return data;
 }
 var STOP_PROP_TAG = '___react-data-table-allow-propagation___';
-var highlightCSS = styled.css(_templateObject$b(), function (props) {
+var highlightCSS = styled.css(_templateObject$a(), function (props) {
   return props.highlightOnHover && props.theme.rows.highlightOnHoverStyle;
 });
 var pointerCSS = styled.css(_templateObject2$4());
@@ -5068,7 +5002,6 @@ var TableRow = React.memo(function (_ref) {
       onRowClicked = _ref.onRowClicked,
       onRowDoubleClicked = _ref.onRowDoubleClicked,
       selectableRows = _ref.selectableRows,
-      vSelectableRows = _ref.vSelectableRows,
       expandableRows = _ref.expandableRows,
       striped = _ref.striped,
       highlightOnHover = _ref.highlightOnHover,
@@ -5091,6 +5024,9 @@ var TableRow = React.memo(function (_ref) {
       expanded = _useState2[0],
       setExpanded = _useState2[1];
 
+  React.useEffect(function () {
+    setExpanded(defaultExpanded);
+  }, [defaultExpanded]);
   var handleExpanded = React.useCallback(function () {
     setExpanded(!expanded);
     onRowExpandToggled(!expanded, row);
@@ -5134,10 +5070,6 @@ var TableRow = React.memo(function (_ref) {
     name: "select-row-".concat(row[keyField]),
     row: row,
     selected: selected
-  }), vSelectableRows && React__default.createElement(TableCellCheckboxv, {
-    name: "select-row-".concat(row[keyField]),
-    row: row,
-    selected: selected
   }), expandableRows && !expandableRowsHideExpander && React__default.createElement(TableCellExpander, {
     expanded: expanded,
     row: row,
@@ -5167,7 +5099,6 @@ TableRow.propTypes = {
   defaultExpanded: propTypes.bool,
   defaultExpanderDisabled: propTypes.bool,
   selectableRows: propTypes.bool.isRequired,
-  vSelectableRows: propTypes.bool.isRequired,
   expandableRows: propTypes.bool.isRequired,
   striped: propTypes.bool.isRequired,
   highlightOnHover: propTypes.bool.isRequired,
@@ -5187,16 +5118,16 @@ TableRow.defaultProps = {
   defaultExpanderDisabled: false
 };
 
-function _templateObject$c() {
+function _templateObject$b() {
   var data = _taggedTemplateLiteral(["\n  padding: 2px;\n  color: inherit;\n  flex-grow: 0;\n  flex-shrink: 0;\n  ", ";\n  ", ";\n"]);
 
-  _templateObject$c = function _templateObject() {
+  _templateObject$b = function _templateObject() {
     return data;
   };
 
   return data;
 }
-var Icon = styled__default.span(_templateObject$c(), function (props) {
+var Icon = styled__default.span(_templateObject$b(), function (props) {
   return props.sortActive ? 'opacity: 1' : 'opacity: 0';
 }, function (props) {
   return props.sortDirection === 'desc' && 'transform: rotate(180deg)';
@@ -5232,16 +5163,16 @@ function _templateObject2$5() {
   return data;
 }
 
-function _templateObject$d() {
+function _templateObject$c() {
   var data = _taggedTemplateLiteral(["\n  ", ";\n"]);
 
-  _templateObject$d = function _templateObject() {
+  _templateObject$c = function _templateObject() {
     return data;
   };
 
   return data;
 }
-var TableColStyle = styled__default(Cell)(_templateObject$d(), function (props) {
+var TableColStyle = styled__default(Cell)(_templateObject$c(), function (props) {
   return props.column.button && 'text-align: center';
 });
 var ColumnSortable = styled__default.div(_templateObject2$5(), function (props) {
@@ -5269,7 +5200,9 @@ var TableCol = React.memo(function (_ref4) {
       pagination = _useTableContext.pagination,
       paginationServer = _useTableContext.paginationServer,
       sortColumn = _useTableContext.sortColumn,
-      sortDirection = _useTableContext.sortDirection;
+      sortDirection = _useTableContext.sortDirection,
+      sortServer = _useTableContext.sortServer,
+      selectableRowsVisibleOnly = _useTableContext.selectableRowsVisibleOnly;
 
   if (column.omit) {
     return null;
@@ -5288,9 +5221,11 @@ var TableCol = React.memo(function (_ref4) {
         type: 'SORT_CHANGE',
         sortDirection: direction,
         sortColumn: column.selector,
+        sortServer: sortServer,
         selectedColumn: column,
         pagination: pagination,
-        paginationServer: paginationServer
+        paginationServer: paginationServer,
+        visibleOnly: selectableRowsVisibleOnly
       });
     }
   };
@@ -5342,16 +5277,16 @@ TableCol.propTypes = {
   sortIcon: propTypes.oneOfType([propTypes.bool, propTypes.object]).isRequired
 };
 
-function _templateObject$e() {
+function _templateObject$d() {
   var data = _taggedTemplateLiteral(["\n  flex: 0 0 48px;\n  justify-content: center;\n  align-items: center;\n  user-select: none;\n  white-space: nowrap;\n"]);
 
-  _templateObject$e = function _templateObject() {
+  _templateObject$d = function _templateObject() {
     return data;
   };
 
   return data;
 }
-var TableColStyle$1 = styled__default(CellBase)(_templateObject$e());
+var TableColStyle$1 = styled__default(CellBase)(_templateObject$d());
 
 var TableColCheckbox = function TableColCheckbox(_ref) {
   var head = _ref.head;
@@ -5400,64 +5335,6 @@ TableColCheckbox.defaultProps = {
   head: true
 };
 
-function _templateObject$f() {
-  var data = _taggedTemplateLiteral(["\n  flex: 0 0 48px;\n  justify-content: center;\n  align-items: center;\n  user-select: none;\n  white-space: nowrap;\n"]);
-
-  _templateObject$f = function _templateObject() {
-    return data;
-  };
-
-  return data;
-}
-var TableColStyle$2 = styled__default(CellBase)(_templateObject$f());
-
-var TableColCheckboxv = function TableColCheckboxv(_ref) {
-  var head = _ref.head;
-
-  var _useTableContext = useTableContext(),
-      dispatch = _useTableContext.dispatch,
-      data = _useTableContext.data,
-      selectedRows = _useTableContext.selectedRows,
-      allSelected = _useTableContext.allSelected,
-      vSelectableRowsComponent = _useTableContext.vSelectableRowsComponent,
-      vSelectableRowsComponentProps = _useTableContext.vSelectableRowsComponentProps,
-      vSelectableRowDisabled = _useTableContext.vSelectableRowDisabled;
-
-  var indeterminate = selectedRows.length > 0 && !allSelected;
-  var rows = vSelectableRowDisabled ? data.filter(function (row) {
-    return !vSelectableRowDisabled(row);
-  }) : data;
-  var isDisabled = rows.length === 0;
-
-  var handleSelectAll = function handleSelectAll() {
-    return dispatch({
-      type: 'V_SELECT_ALL_ROWS',
-      rows: rows
-    });
-  };
-
-  return React__default.createElement(TableColStyle$2, {
-    className: "rdt_TableCol",
-    head: head,
-    noPadding: true
-  }, React__default.createElement(Checkbox, {
-    name: "select-all-rows",
-    component: vSelectableRowsComponent,
-    componentOptions: vSelectableRowsComponentProps,
-    onClick: handleSelectAll,
-    checked: allSelected,
-    indeterminate: indeterminate,
-    disabled: isDisabled
-  }));
-};
-
-TableColCheckboxv.propTypes = {
-  head: propTypes.bool
-};
-TableColCheckboxv.defaultProps = {
-  head: true
-};
-
 function _templateObject3$3() {
   var data = _taggedTemplateLiteral(["\n  position: absolute;\n  top: 0;\n  left: 0;\n  width: 100%;\n  height: 100%;\n  box-sizing: inherit;\n  z-index: 1;\n  align-items: center;\n  justify-content: space-between;\n  display: flex;\n  ", ";\n  ", ";\n"]);
 
@@ -5478,16 +5355,16 @@ function _templateObject2$6() {
   return data;
 }
 
-function _templateObject$g() {
+function _templateObject$e() {
   var data = _taggedTemplateLiteral(["\n  display: flex;\n  align-items: center;\n  flex: 1 0 auto;\n  height: 100%;\n  color: ", ";\n  font-size: ", ";\n  font-weight: 400;\n"]);
 
-  _templateObject$g = function _templateObject() {
+  _templateObject$e = function _templateObject() {
     return data;
   };
 
   return data;
 }
-var Title = styled__default.div(_templateObject$g(), function (props) {
+var Title = styled__default.div(_templateObject$e(), function (props) {
   return props.theme.contextMenu.fontColor;
 }, function (props) {
   return props.theme.contextMenu.fontSize;
@@ -5555,16 +5432,16 @@ function _templateObject2$7() {
   return data;
 }
 
-function _templateObject$h() {
+function _templateObject$f() {
   var data = _taggedTemplateLiteral(["\n  position: relative;\n  box-sizing: border-box;\n  overflow: visible;\n  display: flex;\n  flex: 1 1 auto;\n  align-items: center;\n  justify-content: space-between;\n  width: 100%;\n  flex-wrap: wrap;\n  ", "\n"]);
 
-  _templateObject$h = function _templateObject() {
+  _templateObject$f = function _templateObject() {
     return data;
   };
 
   return data;
 }
-var TableHeaderStyle = styled__default.header(_templateObject$h(), function (props) {
+var TableHeaderStyle = styled__default.header(_templateObject$f(), function (props) {
   return props.theme.header.style;
 });
 var Title$1 = styled__default.div(_templateObject2$7(), function (props) {
@@ -5593,10 +5470,10 @@ TableHeader.defaultProps = {
   showMenu: true
 };
 
-function _templateObject$i() {
+function _templateObject$g() {
   var data = _taggedTemplateLiteral(["\n  position: relative;\n  display: flex;\n  flex: 1 1 auto;\n  box-sizing: border-box;\n  align-items: center;\n  padding: 4px 16px 4px 24px;\n  width: 100%;\n  justify-content: ", ";\n  flex-wrap: ", ";\n  ", "\n"]);
 
-  _templateObject$i = function _templateObject() {
+  _templateObject$g = function _templateObject() {
     return data;
   };
 
@@ -5607,7 +5484,7 @@ var alignMap = {
   right: 'flex-end',
   center: 'center'
 };
-var SubheaderWrapper = styled__default.header(_templateObject$i(), function (props) {
+var SubheaderWrapper = styled__default.header(_templateObject$g(), function (props) {
   return alignMap[props.align];
 }, function (props) {
   return props.wrapContent ? 'wrap' : 'nowrap';
@@ -5646,16 +5523,16 @@ function _templateObject2$8() {
   return data;
 }
 
-function _templateObject$j() {
+function _templateObject$h() {
   var data = _taggedTemplateLiteral(["\n  display: flex;\n  flex-direction: column;\n  ", ";\n"]);
 
-  _templateObject$j = function _templateObject() {
+  _templateObject$h = function _templateObject() {
     return data;
   };
 
   return data;
 }
-var TableBody = styled__default.div(_templateObject$j(), function (_ref) {
+var TableBody = styled__default.div(_templateObject$h(), function (_ref) {
   var fixedHeader = _ref.fixedHeader,
       hasOffset = _ref.hasOffset,
       offset = _ref.offset,
@@ -5687,10 +5564,10 @@ function _templateObject2$9() {
   return data;
 }
 
-function _templateObject$k() {
+function _templateObject$i() {
   var data = _taggedTemplateLiteral(["\n  position: relative;\n  width: 100%;\n  ", ";\n  ", ";\n"]);
 
-  _templateObject$k = function _templateObject() {
+  _templateObject$i = function _templateObject() {
     return data;
   };
 
@@ -5702,22 +5579,22 @@ function _templateObject$k() {
   https://www.brunildo.org/test/Overflowxy2.html
 */
 
-var ResponsiveWrapper = styled__default.div(_templateObject$k(), function (props) {
+var ResponsiveWrapper = styled__default.div(_templateObject$i(), function (props) {
   return props.responsive && styled.css(_templateObject2$9());
 }, function (props) {
   return props.overflowY && props.responsive && props.overflowYOffset && styled.css(_templateObject3$5(), props.overflowYOffset, props.overflowYOffset);
 });
 
-function _templateObject$l() {
+function _templateObject$j() {
   var data = _taggedTemplateLiteral(["\n  position: relative;\n  box-sizing: border-box;\n  width: 100%;\n  height: 100%;\n  ", ";\n"]);
 
-  _templateObject$l = function _templateObject() {
+  _templateObject$j = function _templateObject() {
     return data;
   };
 
   return data;
 }
-var ProgressWrapperStyle = styled__default.div(_templateObject$l(), function (props) {
+var ProgressWrapperStyle = styled__default.div(_templateObject$j(), function (props) {
   return props.theme.progress.style;
 });
 
@@ -5730,8 +5607,34 @@ ProgressWrapper.propTypes = {
   children: propTypes.oneOfType([propTypes.string, propTypes.node, propTypes.func]).isRequired
 };
 
-function _templateObject$m() {
+function _templateObject$k() {
   var data = _taggedTemplateLiteral(["\n  position: relative;\n  width: 100%;\n  height: 100%;\n  ", ";\n"]);
+
+  _templateObject$k = function _templateObject() {
+    return data;
+  };
+
+  return data;
+}
+var TableWrapper = styled__default.div(_templateObject$k(), function (props) {
+  return props.theme.tableWrapper.style;
+});
+
+function _templateObject$l() {
+  var data = _taggedTemplateLiteral(["\n  white-space: nowrap;\n  ", ";\n"]);
+
+  _templateObject$l = function _templateObject() {
+    return data;
+  };
+
+  return data;
+}
+var TableColExpander = styled__default(CellBase)(_templateObject$l(), function (props) {
+  return props.theme.expanderCell.style;
+});
+
+function _templateObject$m() {
+  var data = _taggedTemplateLiteral(["\n  box-sizing: border-box;\n  width: 100%;\n  height: 100%;\n  ", ";\n"]);
 
   _templateObject$m = function _templateObject() {
     return data;
@@ -5739,33 +5642,7 @@ function _templateObject$m() {
 
   return data;
 }
-var TableWrapper = styled__default.div(_templateObject$m(), function (props) {
-  return props.theme.tableWrapper.style;
-});
-
-function _templateObject$n() {
-  var data = _taggedTemplateLiteral(["\n  white-space: nowrap;\n  ", ";\n"]);
-
-  _templateObject$n = function _templateObject() {
-    return data;
-  };
-
-  return data;
-}
-var TableColExpander = styled__default(CellBase)(_templateObject$n(), function (props) {
-  return props.theme.expanderCell.style;
-});
-
-function _templateObject$o() {
-  var data = _taggedTemplateLiteral(["\n  box-sizing: border-box;\n  width: 100%;\n  height: 100%;\n  ", ";\n"]);
-
-  _templateObject$o = function _templateObject() {
-    return data;
-  };
-
-  return data;
-}
-var NoDataWrapperStyle = styled__default.div(_templateObject$o(), function (props) {
+var NoDataWrapperStyle = styled__default.div(_templateObject$m(), function (props) {
   return props.theme.noData.style;
 });
 
@@ -5802,16 +5679,16 @@ function _templateObject2$a() {
   return data;
 }
 
-function _templateObject$p() {
+function _templateObject$n() {
   var data = _taggedTemplateLiteral(["\n  cursor: pointer;\n  height: 24px;\n  min-width: 24px;\n  user-select: none;\n  padding-left: 8px;\n  padding-right: 12px;\n  box-sizing: content-box;\n  font-size: inherit;\n  color: inherit;\n  border: none;\n  background-color: transparent;\n  appearance: none;\n  direction: ltr;\n\n  &::-ms-expand {\n    display: none;\n  }\n\n  &:disabled::-ms-expand {\n    background: #f60;\n  }\n"]);
 
-  _templateObject$p = function _templateObject() {
+  _templateObject$n = function _templateObject() {
     return data;
   };
 
   return data;
 }
-var SelectControl = styled__default.select(_templateObject$p());
+var SelectControl = styled__default.select(_templateObject$n());
 var SelectWrapper = styled__default.div(_templateObject2$a());
 
 var Select = function Select(props) {
@@ -5868,10 +5745,10 @@ function _templateObject2$b() {
   return data;
 }
 
-function _templateObject$q() {
+function _templateObject$o() {
   var data = _taggedTemplateLiteral(["\n  display: flex;\n  flex: 1 1 auto;\n  justify-content: flex-end;\n  align-items: center;\n  box-sizing: border-box;\n  padding-right: 8px;\n  padding-left: 8px;\n  width: 100%;\n  ", ";\n"]);
 
-  _templateObject$q = function _templateObject() {
+  _templateObject$o = function _templateObject() {
     return data;
   };
 
@@ -5882,7 +5759,7 @@ var defaultComponentOptions = {
   rangeSeparatorText: 'of',
   noRowsPerPage: false
 };
-var PaginationWrapper = styled__default.nav(_templateObject$q(), function (props) {
+var PaginationWrapper = styled__default.nav(_templateObject$o(), function (props) {
   return props.theme.pagination.style;
 });
 var Button = styled__default.button(_templateObject2$b(), function (props) {
@@ -5951,6 +5828,7 @@ var Pagination = function Pagination(_ref) {
     }, num);
   }))), React__default.createElement(Range, null, range), React__default.createElement(PageList, null, React__default.createElement(Button, {
     id: "pagination-first-page",
+    type: "button",
     "aria-label": "First Page",
     "aria-disabled": disabledLesser,
     onClick: handleFirst,
@@ -5958,6 +5836,7 @@ var Pagination = function Pagination(_ref) {
     isRTL: isRTL
   }, paginationIconFirstPage), React__default.createElement(Button, {
     id: "pagination-previous-page",
+    type: "button",
     "aria-label": "Previous Page",
     "aria-disabled": disabledLesser,
     onClick: handlePrevious,
@@ -5965,6 +5844,7 @@ var Pagination = function Pagination(_ref) {
     isRTL: isRTL
   }, paginationIconPrevious), React__default.createElement(Button, {
     id: "pagination-next-page",
+    type: "button",
     "aria-label": "Next Page",
     "aria-disabled": disabledGreater,
     onClick: handleNext,
@@ -5972,6 +5852,7 @@ var Pagination = function Pagination(_ref) {
     isRTL: isRTL
   }, paginationIconNext), React__default.createElement(Button, {
     id: "pagination-last-page",
+    type: "button",
     "aria-label": "Last Page",
     "aria-disabled": disabledGreater,
     onClick: handleLast,
@@ -6098,18 +5979,12 @@ var propTypes$1 = {
   title: propTypes.oneOfType([propTypes.string, propTypes.node]),
   selectableRows: propTypes.bool,
   selectableRowsHighlight: propTypes.bool,
+  selectableRowsVisibleOnly: propTypes.bool,
   selectableRowsNoSelectAll: propTypes.bool,
   selectableRowSelected: propTypes.func,
   selectableRowDisabled: propTypes.func,
   selectableRowsComponent: propTypes.oneOfType([propTypes.string, propTypes.node, propTypes.func, propTypes.object]),
   selectableRowsComponentProps: propTypes.object,
-  vSelectableRows: propTypes.bool,
-  vSelectableRowsHighlight: propTypes.bool,
-  vSelectableRowsNoSelectAll: propTypes.bool,
-  vSelectableRowSelected: propTypes.func,
-  vSelectableRowDisabled: propTypes.func,
-  vSelectableRowsComponent: propTypes.oneOfType([propTypes.string, propTypes.node, propTypes.func, propTypes.object]),
-  vSelectableRowsComponentProps: propTypes.object,
   onRowsSelectedUpdate: propTypes.func,
   clearSelectedRows: propTypes.bool,
   expandableRows: propTypes.bool,
@@ -6199,13 +6074,6 @@ var defaultProps = {
   selectableRowDisabled: null,
   selectableRowsComponent: 'input',
   selectableRowsComponentProps: {},
-  vSelectableRows: false,
-  vSelectableRowsHighlight: false,
-  vSelectableRowsNoSelectAll: false,
-  vSelectableRowSelected: null,
-  vSelectableRowDisabled: null,
-  vSelectableRowsComponent: 'input',
-  vSelectableRowsComponentProps: {},
   onSelectedRowsChange: function onSelectedRowsChange() {
     return null;
   },
@@ -6775,17 +6643,11 @@ var DataTable = React.memo(function (_ref) {
       selectableRows = _ref.selectableRows,
       selectableRowsHighlight = _ref.selectableRowsHighlight,
       selectableRowsNoSelectAll = _ref.selectableRowsNoSelectAll,
+      selectableRowsVisibleOnly = _ref.selectableRowsVisibleOnly,
       selectableRowSelected = _ref.selectableRowSelected,
       selectableRowDisabled = _ref.selectableRowDisabled,
       selectableRowsComponent = _ref.selectableRowsComponent,
       selectableRowsComponentProps = _ref.selectableRowsComponentProps,
-      vSelectableRows = _ref.vSelectableRows,
-      vSelectableRowsHighlight = _ref.vSelectableRowsHighlight,
-      vSelectableRowsNoSelectAll = _ref.vSelectableRowsNoSelectAll,
-      vSelectableRowSelected = _ref.vSelectableRowSelected,
-      vSelectableRowDisabled = _ref.vSelectableRowDisabled,
-      vSelectableRowsComponent = _ref.vSelectableRowsComponent,
-      vSelectableRowsComponentProps = _ref.vSelectableRowsComponentProps,
       onRowExpandToggled = _ref.onRowExpandToggled,
       onSelectedRowsChange = _ref.onSelectedRowsChange,
       expandableIcon = _ref.expandableIcon,
@@ -6892,7 +6754,8 @@ var DataTable = React.memo(function (_ref) {
     return dispatch({
       type: 'CHANGE_PAGE',
       page: page,
-      paginationServer: paginationServer
+      paginationServer: paginationServer,
+      visibleOnly: selectableRowsVisibleOnly
     });
   };
 
@@ -6905,17 +6768,9 @@ var DataTable = React.memo(function (_ref) {
   }, [selectedCount]);
   useFirstUpdate(function () {
     onChangePage(currentPage, paginationTotalRows || data.length);
-    dispatch({
-      type: 'CLEAR_SELECTED_ROWS',
-      selectedRowsFlag: clearSelectedRows
-    });
   }, [currentPage]);
   useFirstUpdate(function () {
     onChangeRowsPerPage(rowsPerPage, currentPage);
-    dispatch({
-      type: 'CLEAR_SELECTED_ROWS',
-      selectedRowsFlag: clearSelectedRows
-    });
   }, [rowsPerPage]);
   useFirstUpdate(function () {
     onSort(selectedColumn, sortDirection);
@@ -6937,18 +6792,6 @@ var DataTable = React.memo(function (_ref) {
       dispatch({
         type: 'SELECT_MULTIPLE_ROWS',
         selectedRows: preSelectedRows,
-        rows: data
-      });
-    }
-
-    if (vSelectableRowSelected) {
-      var _preSelectedRows = data.filter(function (row) {
-        return vSelectableRowSelected(row);
-      });
-
-      dispatch({
-        type: 'SELECT_MULTIPLE_ROWS',
-        selectedRows: _preSelectedRows,
         rows: data
       });
     } // We only want to re-render if the data changes
@@ -7009,7 +6852,7 @@ var DataTable = React.memo(function (_ref) {
 
   var init = {
     dispatch: dispatch,
-    data: data,
+    data: selectableRowsVisibleOnly ? calculatedRows : data,
     allSelected: allSelected,
     selectedRows: selectedRows,
     selectedCount: selectedCount,
@@ -7019,14 +6862,12 @@ var DataTable = React.memo(function (_ref) {
     contextMessage: contextMessage,
     contextActions: contextActions,
     contextComponent: contextComponent,
+    sortServer: sortServer,
+    selectableRowsVisibleOnly: selectableRowsVisibleOnly,
     selectableRowSelected: selectableRowSelected,
     selectableRowDisabled: selectableRowDisabled,
     selectableRowsComponent: selectableRowsComponent,
     selectableRowsComponentProps: selectableRowsComponentProps,
-    vSelectableRowSelected: vSelectableRowSelected,
-    vSelectableRowDisabled: vSelectableRowDisabled,
-    vSelectableRowsComponent: vSelectableRowsComponent,
-    vSelectableRowsComponentProps: vSelectableRowsComponentProps,
     expandableIcon: expandableIcon,
     pagination: pagination,
     paginationServer: paginationServer,
@@ -7086,13 +6927,6 @@ var DataTable = React.memo(function (_ref) {
     role: "columnheader"
   }) : React__default.createElement(TableColCheckbox, {
     role: "columnheader"
-  })), vSelectableRows && (vSelectableRowsNoSelectAll ? React__default.createElement(CellBase, {
-    style: {
-      flex: '0 0 48px'
-    },
-    role: "columnheader"
-  }) : React__default.createElement(TableColCheckboxv, {
-    role: "columnheader"
   })), expandableRows && !expandableRowsHideExpander && React__default.createElement(TableColExpander, null), columnsMemo.map(function (column) {
     return React__default.createElement(TableCol, {
       key: column.id,
@@ -7118,7 +6952,6 @@ var DataTable = React.memo(function (_ref) {
       row: row,
       columns: columnsMemo,
       selectableRows: selectableRows,
-      vSelectableRows: vSelectableRows,
       expandableRows: expandableRows,
       striped: striped,
       highlightOnHover: highlightOnHover,
@@ -7136,8 +6969,7 @@ var DataTable = React.memo(function (_ref) {
       onRowDoubleClicked: handleRowDoubleClicked,
       conditionalRowStyles: conditionalRowStyles,
       selected: selected,
-      selectableRowsHighlight: selectableRowsHighlight,
-      vSelectableRowsHighlight: vSelectableRowsHighlight
+      selectableRowsHighlight: selectableRowsHighlight
     });
   }))), enabledPagination && React__default.createElement(Pagination$1, {
     onChangePage: handleChangePage,

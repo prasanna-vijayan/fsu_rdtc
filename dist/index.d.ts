@@ -68,10 +68,16 @@ export interface IDataTableProps<T> {
   selectableRowsComponent?: React.ReactNode;
   selectableRowsComponentProps?: T;
   selectableRowsHighlight?: boolean;
+  selectableRowsVisibleOnly?: boolean;
   selectableRowSelected?: (row: T) => boolean;
   selectableRowDisabled?: (row: T) => boolean;
+  selectableRowsNoSelectAll?: boolean;
   clearSelectedRows?: boolean;
-  onSelectedRowsChange?: (selectedRowState: T) => void;
+  onSelectedRowsChange?: (selectedRowState: {
+    allSelected: boolean;
+    selectedCount: number;
+    selectedRows: T[];
+  }) => void;
   actions?: React.ReactNode | React.ReactNode[];
   noContextMenu?: boolean;
   contextMessage?: IContextMessage;
